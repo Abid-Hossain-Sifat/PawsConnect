@@ -1,11 +1,150 @@
-import React from 'react'
+import React from "react";
+import { FaGithub } from "react-icons/fa6";
+import { FaLinkedin } from "react-icons/fa6";
+import { FaFacebook } from "react-icons/fa6";
+import { PawPrint } from "lucide-react";
 
 const Footer = () => {
   return (
-    <div>
-      
-    </div>
-  )
-}
+    <footer className="bg-[#dee4e1] text-slate-700 pt-16 pb-8 border-t border-slate-300/40">
+      <div className="max-w-[80%] mx-auto flex flex-col gap-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:flex lg:flex-row lg:justify-between gap-10 lg:gap-4 items-start w-full">
+          <div className="flex flex-col gap-5 max-w-xs w-full">
+            <div className="flex items-center gap-3 text-[#00685f] font-extrabold text-xl tracking-tight">
+              <div className="p-2 bg-[#00685f] rounded-xl">
+                <PawPrint className="text-white w-6 h-6" />
+              </div>
+              <span>PawsConnect</span>
+            </div>
+            <p className="text-gray-600 text-[13.5px] font-medium leading-relaxed">
+              Revolutionizing pet adoption through modern technology and
+              compassionate connections. Making the world a better place, one
+              paw at a time.
+            </p>
+            <div className="flex items-center gap-4 mt-2">
+              <a
+                href="https://github.com"
+                target="_blank"
+                rel="noreferrer"
+                className="p-2 bg-white rounded-xl shadow-sm text-slate-600 hover:text-white hover:bg-slate-900 hover:-translate-y-1 transition-all duration-300"
+              >
+                <FaGithub className="w-4 h-4" />
+              </a>
+              <a
+                href="https://linkedin.com"
+                target="_blank"
+                rel="noreferrer"
+                className="p-2 bg-white rounded-xl shadow-sm text-slate-600 hover:text-white hover:bg-[#0077b5] hover:-translate-y-1 transition-all duration-300"
+              >
+                <FaLinkedin
+                  className="w-4 h-4"
+                  fill="currentColor"
+                  strokeWidth={0}
+                />
+              </a>
+              <a
+                href="https://facebook.com"
+                target="_blank"
+                rel="noreferrer"
+                className="p-2 bg-white rounded-xl shadow-sm text-slate-600 hover:text-white hover:bg-[#1877f2] hover:-translate-y-1 transition-all duration-300"
+              >
+                <FaFacebook
+                  className="w-4 h-4"
+                  fill="currentColor"
+                  strokeWidth={0}
+                />
+              </a>
+            </div>
+          </div>
 
-export default Footer
+          <div className="flex flex-col gap-4 min-w-[150px]">
+            <h4 className="text-slate-900 font-extrabold text-[15px] uppercase tracking-wider">
+              Platform
+            </h4>
+            <ul className="flex flex-col gap-3 text-[14px] font-semibold text-gray-600">
+              {[
+                "Find Pets",
+                "Success Stories",
+                "Partner Shelters",
+                "Resources",
+              ].map((item, index) => (
+                <li key={index}>
+                  <a
+                    href={`#${item.toLowerCase().replace(" ", "-")}`}
+                    className="inline-flex items-center group transition-all duration-300"
+                  >
+                    <span className="max-w-0 opacity-0 text-[#00685f] font-bold transition-all duration-300 ease-out group-hover:max-w-[15px] group-hover:opacity-100">
+                      —&nbsp;
+                    </span>
+                    <span className="group-hover:text-[#00685f] group-hover:translate-x-1 transition-transform duration-300 ease-out">
+                      {item}
+                    </span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="flex flex-col gap-4 min-w-[150px]">
+            <h4 className="text-slate-900 font-extrabold text-[15px] uppercase tracking-wider">
+              Company
+            </h4>
+            <ul className="flex flex-col gap-3 text-[14px] font-semibold text-gray-600">
+              {["About Us", "Careers", "Contact", "Press"].map(
+                (item, index) => (
+                  <li key={index}>
+                    <a
+                      href={`#${item.toLowerCase().replace(" ", "-")}`}
+                      className="inline-flex items-center group transition-all duration-300"
+                    >
+                      <span className="max-w-0 opacity-0 text-[#00685f] font-bold transition-all duration-300 ease-out group-hover:max-w-[15px] group-hover:opacity-100">
+                        —&nbsp;
+                      </span>
+                      <span className="group-hover:text-[#00685f] group-hover:translate-x-1 transition-transform duration-300 ease-out">
+                        {item}
+                      </span>
+                    </a>
+                  </li>
+                ),
+              )}
+            </ul>
+          </div>
+
+          <div className="flex flex-col gap-4 max-w-xs w-full">
+            <h4 className="text-slate-900 font-extrabold text-[15px] uppercase tracking-wider">
+              Support Our Mission
+            </h4>
+            <p className="text-gray-600 text-[13.5px] font-medium leading-relaxed">
+              Help us continue our work by donating or volunteering. Every bit
+              counts towards a better life for animals.
+            </p>
+            <div className="flex items-center gap-4 text-[13px] font-bold text-gray-500 mt-2">
+              <a
+                href="#privacy"
+                className="hover:text-[#00685f] transition-colors duration-200"
+              >
+                Privacy Policy
+              </a>
+              <span>•</span>
+              <a
+                href="#terms"
+                className="hover:text-[#00685f] transition-colors duration-200"
+              >
+                Terms of Service
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div className="border-t border-slate-300/60 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-bold text-gray-500">
+          <p>© 2026 PawsConnect. All rights reserved.</p>
+          <p className="tracking-wide uppercase text-[10px] bg-slate-400/10 px-2.5 py-1 rounded-md text-slate-600">
+            Designed By Abid Hossain Sifat
+          </p>
+        </div>
+      </div>
+    </footer>
+  );
+};
+
+export default Footer;
