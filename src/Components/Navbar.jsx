@@ -15,7 +15,7 @@ const Navbar = () => {
           <h1 className='text-3xl font-bold text-[#00685f]'>PawsConnect</h1>
         </div>
         <div className='flex gap-10'>
-          <Link href='#'>
+          <Link href='/'>
             Home
           </Link>
           <Link href='#'>
@@ -29,7 +29,7 @@ const Navbar = () => {
           </Link>
         </div>
         <div>
-          <Link href='#'>
+          <Link href='/log-in'>
             <button className='flex gap-1 items-center btn bg-[#007A78] hover:bg-[#005A58] text-white px-6 py-2.5 text-sm font-medium transition-all duration-300'>
               Login <FaArrowRightToBracket></FaArrowRightToBracket>
             </button>
