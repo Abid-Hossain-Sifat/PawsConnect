@@ -1,5 +1,6 @@
-import React from 'react';
-import { allPets } from '../../../lib/data';
+"use client";
+import React, { useEffect, useState } from 'react';
+import { authClient } from '@/lib/auth-client';
 import { 
   Heart, 
   MapPin, 
@@ -9,15 +10,110 @@ import {
   User, 
   Phone, 
   MessageSquare,
-  MailCheck
+  MailCheck,
+  Loader2,
+  FolderHeart,
+  ExternalLink,
+  Sparkles
 } from 'lucide-react';
 import Link from 'next/link';
 
-const PetDetailsPage = async ({ params }) => {
+const PetDetailsPage = ({ params }) => {
+  const { data: session, isPending: sessionPending } = authClient.useSession();
+  const [pet, setPet] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [hasApplied, setHasApplied] = useState(false);
+  const [userRequest, setUserRequest] = useState(null);
+  const [adoptSubmitting, setAdoptSubmitting] = useState(false);
+  const [adoptSuccess, setAdoptSuccess] = useState(false);
 
-  const { id } = await params;
-  const pets = await allPets();
-  const pet = pets?.find((p) => p._id === id);
+  useEffect(() => {
+    const loadPetAndRequest = async () => {
+      try {
+        const resolvedParams = await params;
+        const petId = resolvedParams.id;
+        
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:2006/pets";
+        const response = await fetch(baseUrl);
+        if (response.ok) {
+          const data = await response.json();
+          const foundPet = data.find((p) => p._id === petId);
+          setPet(foundPet);
+          
+          // Check if this user has already applied for this pet
+          if (session?.user?.email && foundPet) {
+            const reqUrl = `${baseUrl.replace(/\/pets$/, '')}/adoption-requests?petId=${petId}&requesterEmail=${session.user.email}`;
+            const reqResponse = await fetch(reqUrl);
+            if (reqResponse.ok) {
+              const reqData = await reqResponse.json();
+              if (reqData && reqData.length > 0) {
+                setHasApplied(true);
+                setUserRequest(reqData[0]);
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error loading pet details:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadPetAndRequest();
+  }, [params, session, sessionPending]);
+
+  const handleAdoptSubmit = async (e) => {
+    e.preventDefault();
+    setAdoptSubmitting(true);
+
+    const form = e.target;
+    const requestData = {
+      petId: pet._id,
+      petName: pet.name,
+      petImage: pet.image,
+      ownerEmail: pet.email || pet.ownerEmail,
+      requesterEmail: session?.user?.email,
+      requesterName: form.name.value,
+      requesterPhone: form.phone.value,
+      whyAdopt: form.whyAdopt.value,
+      status: 'pending'
+    };
+
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:2006/pets";
+      const apiUrl = `${baseUrl.replace(/\/pets$/, '')}/adoption-requests`;
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(requestData)
+      });
+
+      if (response.ok) {
+        setAdoptSuccess(true);
+        setHasApplied(true);
+        setUserRequest({ status: 'pending' });
+      } else {
+        const errData = await response.json();
+        alert(errData.message || "Failed to submit adoption request.");
+      }
+    } catch (error) {
+      console.error("Error submitting adoption request:", error);
+      alert("Error connecting to server.");
+    } finally {
+      setAdoptSubmitting(false);
+    }
+  };
+
+  if (loading || sessionPending) {
+    return (
+      <div className="min-h-screen bg-[#f5faf8] flex flex-col items-center justify-center p-4">
+        <Loader2 size={40} className="animate-spin text-[#00685f] mb-4" />
+        <p className="text-sm font-semibold text-slate-600">Loading pet details...</p>
+      </div>
+    );
+  }
 
   if (!pet) {
     return (
@@ -31,7 +127,14 @@ const PetDetailsPage = async ({ params }) => {
     );
   }
 
-  const isPending = pet.status?.toLowerCase() === 'pending';
+  const isOwner = session?.user?.email && (session.user.email === pet.email || session.user.email === pet.ownerEmail);
+
+  // If the user has applied for this pet, show the status as 'Pending' to them, even if general status is 'Available'
+  const displayedStatus = isOwner ? (pet.status || 'Available') : (hasApplied ? (userRequest?.status === 'approved' ? 'Adopted' : (userRequest?.status === 'rejected' ? 'Rejected' : 'Pending')) : (pet.status || 'Available'));
+  const isPending = displayedStatus.toLowerCase() === 'pending';
+  const isPendingStatus = isPending;
+  const isAdoptedStatus = (pet.status || '').toLowerCase() === 'adopted';
+  const isApprovedWinner = userRequest && userRequest.status === 'approved';
 
   return (
     <div className="bg-[#f5faf8] min-h-screen py-12">
@@ -49,15 +152,18 @@ const PetDetailsPage = async ({ params }) => {
             
             <div className="relative h-[400px] w-full rounded-2xl overflow-hidden shadow-xs">
               <img 
-                src={pet.image || "https://via.placeholder.com/600x450?text=No+Image"} 
+                src={pet.image || "https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=600&auto=format&fit=crop&q=60"} 
                 alt={pet.name} 
                 className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.target.src = "https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=600&auto=format&fit=crop&q=60";
+                }}
               />
               
               <span className={`absolute top-4 left-4 px-4 py-1.5 rounded-full text-xs font-bold tracking-wide capitalize ${
-                isPending ? 'bg-[#fea619] text-white' : 'bg-[#00685f] text-white'
+                isAdoptedStatus ? 'bg-slate-500 text-white' : (isPendingStatus ? 'bg-[#fea619] text-white' : 'bg-[#00685f] text-white')
               }`}>
-                {pet.status || 'Available'}
+                {displayedStatus}
               </span>
 
               <button className="absolute top-4 right-4 p-2.5 bg-black/20 hover:bg-black/40 rounded-full text-white backdrop-blur-xs transition-all">
@@ -120,95 +226,218 @@ const PetDetailsPage = async ({ params }) => {
               </div>
               <div>
                 <p className="text-[11px] text-gray-400 font-semibold uppercase">Contact Shelter</p>
-                <p className="text-sm font-bold text-slate-700">{pet.ownerEmail}</p>
+                <p className="text-sm font-bold text-slate-700">{pet.email || pet.ownerEmail}</p>
               </div>
             </div>
 
           </div>
 
-          <div className="lg:col-span-5 bg-white rounded-3xl p-6 shadow-sm border border-gray-100 sticky top-6">
-            <h2 className="text-2xl font-bold text-slate-800 mb-1">Adopt {pet.name}</h2>
-            <p className="text-xs text-gray-500 mb-6">
-              Please fill out this quick form to send an adoption request to the shelter.
-            </p>
+          <div className="lg:col-span-5 sticky top-6">
+            {!session ? (
+              /* ==================== 🔒 UNAUTHENTICATED ==================== */
+              <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm text-center">
+                <h2 className="text-2xl font-bold text-slate-800 mb-2">Sign In to Adopt</h2>
+                <p className="text-xs text-gray-500 mb-6">
+                  You need to be logged in to send an adoption request for {pet.name}.
+                </p>
+                <Link href="/log-in" className="w-full block py-4 bg-[#00685f] hover:bg-[#005049] text-white font-bold rounded-xl text-sm transition-all text-center">
+                  Log In Now
+                </Link>
+              </div>
+            ) : isOwner ? (
+              /* ==================== 👑 OWNED PET STATE ==================== */
+              <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm text-center flex flex-col items-center">
+                <div className="h-20 w-20 bg-teal-50 text-[#00685f] rounded-full flex items-center justify-center mb-6 border border-teal-100 shadow-inner">
+                  <FolderHeart size={36} />
+                </div>
+                
+                <h2 className="text-2xl font-black text-slate-800 mb-3">Your Listed Pet</h2>
+                <p className="text-sm text-slate-400 max-w-xs leading-relaxed mb-8">
+                  You are the owner of <strong className="text-slate-700">"{pet.name}"</strong>. Since you listed this pet for adoption, you cannot submit an adoption request for it.
+                </p>
 
-            <form className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Your Full Name</label>
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-gray-400">
-                    <User size={18} />
-                  </span>
-                  <input 
-                    type="text" 
-                    placeholder="John Doe" 
-                    required
-                    disabled={isPending}
-                    className="w-full bg-gray-50/50 border border-gray-200 rounded-xl py-3 pl-11 pr-4 text-sm outline-none focus:border-[#00685f] focus:bg-white transition-all disabled:cursor-not-allowed"
-                  />
+                <div className="w-full space-y-3">
+                  <Link 
+                    href="/dashboard/my-listing" 
+                    className="w-full py-4 bg-[#00685f] hover:bg-[#005049] text-white font-bold rounded-xl text-sm transition-all duration-300 shadow-sm hover:shadow-md flex items-center justify-center gap-2"
+                  >
+                    Manage Listing
+                    <ExternalLink size={16} />
+                  </Link>
+                  
+                  <Link 
+                    href="/all-pets" 
+                    className="w-full py-3.5 border border-slate-200 text-slate-600 font-bold rounded-xl text-xs hover:bg-slate-50 transition-all block"
+                  >
+                    View Other Pets
+                  </Link>
                 </div>
               </div>
+            ) : isAdoptedStatus ? (
+              isApprovedWinner ? (
+                /* ==================== 🎉 APPROVED WINNER STATE ==================== */
+                <div className="bg-white rounded-3xl p-8 border border-emerald-100 shadow-md text-center flex flex-col items-center animate-fadeIn bg-gradient-to-b from-white to-emerald-50/20">
+                  <div className="h-20 w-20 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mb-6 border border-emerald-100 shadow-inner">
+                    <Sparkles size={36} className="animate-pulse" />
+                  </div>
+                  
+                  <h2 className="text-2xl font-black text-emerald-700 mb-3">You Got This Pet! 🎉</h2>
+                  <p className="text-sm text-emerald-800/80 max-w-xs leading-relaxed mb-6 font-medium">
+                    Congratulations! Your adoption request for <strong className="text-slate-800 font-bold">"{pet.name}"</strong> has been approved. You are now the proud owner of this lovely companion!
+                  </p>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Your Email Address</label>
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-gray-400">
-                    <MailCheck size={18} />
-                  </span>
-                  <input 
-                    type="email" 
-                    placeholder="johndoe@example.com" 
-                    required
-                    disabled={isPending}
-                    className="w-full bg-gray-50/50 border border-gray-200 rounded-xl py-3 pl-11 pr-4 text-sm outline-none focus:border-[#00685f] focus:bg-white transition-all disabled:cursor-not-allowed"
-                  />
+                  <div className="bg-emerald-50/80 border border-emerald-100/50 rounded-2xl p-4 text-left w-full mb-6 text-xs space-y-2">
+                    <p className="font-extrabold text-emerald-900 uppercase tracking-wider text-[10px]">Shelter Contact Details:</p>
+                    <p><strong className="text-emerald-800">Email:</strong> {pet.email || pet.ownerEmail}</p>
+                    <p><strong className="text-emerald-800">Location:</strong> {pet.location}</p>
+                  </div>
+
+                  <Link 
+                    href="/all-pets" 
+                    className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition-all block text-center shadow-xs"
+                  >
+                    Browse More Companions
+                  </Link>
                 </div>
-              </div>
+              ) : (
+                /* ==================== 🐾 ALREADY ADOPTED BY SOMEONE ELSE ==================== */
+                <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm text-center flex flex-col items-center">
+                  <div className="h-20 w-20 bg-slate-50 text-slate-400 rounded-full flex items-center justify-center mb-6 border border-slate-200">
+                    <Heart size={36} className="fill-slate-300 stroke-slate-400" />
+                  </div>
+                  
+                  <h2 className="text-2xl font-black text-slate-800 mb-3">Already Adopted</h2>
+                  <p className="text-sm text-slate-400 max-w-xs leading-relaxed mb-6">
+                    We are happy to let you know that <strong className="text-slate-700">"{pet.name}"</strong> has already found a loving home and is adopted.
+                  </p>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Phone Number</label>
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-gray-400">
-                    <Phone size={18} />
-                  </span>
-                  <input 
-                    type="tel" 
-                    placeholder="+880 1XXX XXXXXX" 
-                    required
-                    disabled={isPending}
-                    className="w-full bg-gray-50/50 border border-gray-200 rounded-xl py-3 pl-11 pr-4 text-sm outline-none focus:border-[#00685f] focus:bg-white transition-all disabled:cursor-not-allowed"
-                  />
+                  <Link 
+                    href="/all-pets" 
+                    className="w-full py-3.5 bg-[#00685f] hover:bg-[#005049] text-white font-bold rounded-xl text-xs transition-all block text-center"
+                  >
+                    Find Other Companions
+                  </Link>
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Why do you want to adopt?</label>
-                <div className="relative">
-                  <span className="absolute top-3 left-3.5 text-gray-400">
-                    <MessageSquare size={18} />
-                  </span>
-                  <textarea 
-                    rows="4" 
-                    placeholder={`Tell us a bit about yourself and your home environment for ${pet.name}...`} 
-                    required
-                    disabled={isPending}
-                    className="w-full bg-gray-50/50 border border-gray-200 rounded-xl py-3 pl-11 pr-4 text-sm outline-none focus:border-[#00685f] focus:bg-white transition-all resize-none disabled:cursor-not-allowed"
-                  ></textarea>
+              )
+            ) : (adoptSuccess || (hasApplied && userRequest?.status === 'pending')) ? (
+              /* ==================== 🎉 ADOPTION REQUEST SUCCESS / ALREADY APPLIED (PENDING) ==================== */
+              <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm text-center flex flex-col items-center animate-fadeIn">
+                <div className="h-20 w-20 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mb-6 border border-emerald-100 shadow-inner">
+                  <ShieldCheck size={36} />
                 </div>
-              </div>
+                
+                <h2 className="text-2xl font-black text-slate-800 mb-3">Request Submitted!</h2>
+                <p className="text-sm text-slate-400 max-w-xs leading-relaxed mb-6">
+                  Your adoption request for <strong className="text-slate-700">"{pet.name}"</strong> has been recorded. The pet status will appear as <strong className="text-amber-600">"Pending"</strong> for you while the owner reviews your request.
+                </p>
 
-              <button 
-                type="submit"
-                disabled={isPending}
-                className={`w-full py-4 rounded-xl font-bold text-base transition-all duration-300 shadow-xs mt-2 ${
-                  isPending 
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
-                    : 'bg-[#00685f] hover:bg-[#005049] text-white hover:shadow-md'
-                }`}
-              >
-                {isPending ? 'Adoption Pending' : `Submit Adoption Request`}
-              </button>
-            </form>
+                <Link 
+                  href="/all-pets" 
+                  className="w-full py-3.5 bg-[#00685f] hover:bg-[#005049] text-white font-bold rounded-xl text-xs transition-all block text-center"
+                >
+                  Back to All Pets
+                </Link>
+              </div>
+            ) : (
+              /* ==================== 📝 STANDARD ADOPTION FORM ==================== */
+              <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 animate-fadeIn">
+                <h2 className="text-2xl font-bold text-slate-800 mb-1">Adopt {pet.name}</h2>
+                <p className="text-xs text-gray-500 mb-6">
+                  Please fill out this quick form to send an adoption request to the shelter.
+                </p>
+
+                <form onSubmit={handleAdoptSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Your Full Name</label>
+                    <div className="relative">
+                      <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-gray-400">
+                        <User size={18} />
+                      </span>
+                      <input 
+                        type="text" 
+                        name="name"
+                        defaultValue={session?.user?.name || ""}
+                        placeholder="John Doe" 
+                        required
+                        disabled={isPending}
+                        className="w-full bg-gray-50/50 border border-gray-200 rounded-xl py-3 pl-11 pr-4 text-sm outline-none focus:border-[#00685f] focus:bg-white transition-all disabled:cursor-not-allowed text-slate-800 font-medium"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Your Email Address</label>
+                    <div className="relative">
+                      <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-gray-400">
+                        <MailCheck size={18} />
+                      </span>
+                      <input 
+                        type="email" 
+                        name="email"
+                        value={session?.user?.email || ""}
+                        readOnly
+                        placeholder="johndoe@example.com" 
+                        required
+                        disabled={isPending}
+                        className="w-full bg-gray-100 border border-gray-200 rounded-xl py-3 pl-11 pr-4 text-sm outline-none cursor-not-allowed select-none text-slate-500 font-medium"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Phone Number</label>
+                    <div className="relative">
+                      <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-gray-400">
+                        <Phone size={18} />
+                      </span>
+                      <input 
+                        type="tel" 
+                        name="phone"
+                        placeholder="+880 1XXX XXXXXX" 
+                        required
+                        disabled={isPending}
+                        className="w-full bg-gray-50/50 border border-gray-200 rounded-xl py-3 pl-11 pr-4 text-sm outline-none focus:border-[#00685f] focus:bg-white transition-all disabled:cursor-not-allowed text-slate-800 font-medium"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Why do you want to adopt?</label>
+                    <div className="relative">
+                      <span className="absolute top-3 left-3.5 text-gray-400">
+                        <MessageSquare size={18} />
+                      </span>
+                      <textarea 
+                        rows="4" 
+                        name="whyAdopt"
+                        placeholder={`Tell us a bit about yourself and your home environment for ${pet.name}...`} 
+                        required
+                        disabled={isPending}
+                        className="w-full bg-gray-50/50 border border-gray-200 rounded-xl py-3 pl-11 pr-4 text-sm outline-none focus:border-[#00685f] focus:bg-white transition-all resize-none disabled:cursor-not-allowed text-slate-800 font-medium"
+                      ></textarea>
+                    </div>
+                  </div>
+
+                  <button 
+                    type="submit"
+                    disabled={isPending || adoptSubmitting}
+                    className={`w-full py-4 rounded-xl font-bold text-base transition-all duration-300 shadow-xs mt-2 flex items-center justify-center gap-2 ${
+                      isPending 
+                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                        : 'bg-[#00685f] hover:bg-[#005049] text-white hover:shadow-md'
+                    }`}
+                  >
+                    {adoptSubmitting ? (
+                      <Loader2 size={20} className="animate-spin" />
+                    ) : isPending ? (
+                      'Adoption Pending'
+                    ) : (
+                      `Submit Adoption Request`
+                    )}
+                  </button>
+                </form>
+              </div>
+            )}
           </div>
 
         </div>

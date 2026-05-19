@@ -25,7 +25,13 @@ import {
   ShieldAlert,
   Mail,
   CircleDollarSign,
-  FileText
+  FileText,
+  User,
+  Phone,
+  MessageSquare,
+  CheckCircle2,
+  XCircle,
+  Clock
 } from "lucide-react";
 
 const DashListPage = () => {
@@ -44,6 +50,23 @@ const DashListPage = () => {
   const [editFormData, setEditFormData] = useState({});
 
   const [showUpdateConfirmModal, setShowUpdateConfirmModal] = useState(false);
+
+  // Adoption Requests Modal States
+  const [showRequestsModal, setShowRequestsModal] = useState(false);
+  const [selectedPetForRequests, setSelectedPetForRequests] = useState(null);
+  const [petRequests, setPetRequests] = useState([]);
+  const [loadingRequests, setLoadingRequests] = useState(false);
+
+  // Approve & Reject Confirm Modals
+  const [showApproveConfirmModal, setShowApproveConfirmModal] = useState(false);
+  const [requestToApprove, setRequestToApprove] = useState(null);
+  
+  const [showRejectConfirmModal, setShowRejectConfirmModal] = useState(false);
+  const [requestToReject, setRequestToReject] = useState(null);
+
+  // Delete Request Confirm Modals
+  const [showRequestDeleteConfirm, setShowRequestDeleteConfirm] = useState(false);
+  const [requestToDelete, setRequestToDelete] = useState(null);
 
   const fetchMyListings = async (email) => {
     try {
@@ -161,6 +184,148 @@ const DashListPage = () => {
     }
   };
 
+  // Trigger Adoption Requests Modal for clicked Card
+  const triggerRequestsModal = async (pet) => {
+    setSelectedPetForRequests(pet);
+    setShowRequestsModal(true);
+    setLoadingRequests(true);
+    
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:2006/pets";
+      const apiUrl = `${baseUrl.replace(/\/pets$/, '')}/adoption-requests?petId=${pet._id}`;
+      const response = await fetch(apiUrl);
+      if (response.ok) {
+        const data = await response.json();
+        setPetRequests(data);
+      }
+    } catch (error) {
+      console.error("Error fetching requests:", error);
+    } finally {
+      setLoadingRequests(false);
+    }
+  };
+
+  // Trigger Approve Request Confirm Modal
+  const triggerApproveRequest = (request) => {
+    setRequestToApprove(request);
+    setShowApproveConfirmModal(true);
+  };
+
+  // Perform Request Approval in MongoDB
+  const confirmApproveRequest = async () => {
+    if (!requestToApprove) return;
+    
+    const id = requestToApprove._id;
+    setShowApproveConfirmModal(false);
+    setLoadingRequests(true);
+    
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:2006/pets";
+      const apiUrl = `${baseUrl.replace(/\/pets$/, '')}/adoption-requests/${id}/approve`;
+      const response = await fetch(apiUrl, {
+        method: "PUT",
+      });
+
+      if (response.ok) {
+        // Local UI State updates:
+        // 1. Mark this request as approved, others for this pet as rejected
+        setPetRequests(petRequests.map((req) => {
+          if (req._id === id) return { ...req, status: 'approved' };
+          return { ...req, status: 'rejected' };
+        }));
+        
+        // 2. Mark this pet as 'Adopted' in local listings state
+        setPets(pets.map((pet) => {
+          if (pet._id === selectedPetForRequests._id) return { ...pet, status: 'Adopted' };
+          return pet;
+        }));
+        
+        // 3. Update currently selected pet's status representation
+        setSelectedPetForRequests({ ...selectedPetForRequests, status: 'Adopted' });
+      } else {
+        alert("Failed to approve adoption request.");
+      }
+    } catch (error) {
+      console.error("Error approving request:", error);
+      alert("Error connecting to server.");
+    } finally {
+      setLoadingRequests(false);
+      setRequestToApprove(null);
+    }
+  };
+
+  // Trigger Reject Request Confirm Modal
+  const triggerRejectRequest = (request) => {
+    setRequestToReject(request);
+    setShowRejectConfirmModal(true);
+  };
+
+  // Perform Request Rejection in MongoDB
+  const confirmRejectRequest = async () => {
+    if (!requestToReject) return;
+    
+    const id = requestToReject._id;
+    setShowRejectConfirmModal(false);
+    setLoadingRequests(true);
+    
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:2006/pets";
+      const apiUrl = `${baseUrl.replace(/\/pets$/, '')}/adoption-requests/${id}/reject`;
+      const response = await fetch(apiUrl, {
+        method: "PUT",
+      });
+
+      if (response.ok) {
+        // Mark request as rejected locally
+        setPetRequests(petRequests.map((req) => (req._id === id ? { ...req, status: 'rejected' } : req)));
+      } else {
+        alert("Failed to reject request.");
+      }
+    } catch (error) {
+      console.error("Error rejecting request:", error);
+      alert("Error connecting to server.");
+    } finally {
+      setLoadingRequests(false);
+      setRequestToReject(null);
+    }
+  };
+
+  // Trigger Delete Request Confirmation Modal
+  const triggerDeleteRequest = (request) => {
+    setRequestToDelete(request);
+    setShowRequestDeleteConfirm(true);
+  };
+
+  // Perform Request Deletion in MongoDB
+  const confirmDeleteRequest = async () => {
+    if (!requestToDelete) return;
+    
+    const id = requestToDelete._id;
+    setShowRequestDeleteConfirm(false);
+    setLoadingRequests(true);
+    
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:2006/pets";
+      const apiUrl = `${baseUrl.replace(/\/pets$/, '')}/adoption-requests/${id}`;
+      const response = await fetch(apiUrl, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        // Filter out deleted request locally
+        setPetRequests(petRequests.filter((req) => req._id !== id));
+      } else {
+        alert("Failed to delete adoption request.");
+      }
+    } catch (error) {
+      console.error("Error deleting request:", error);
+      alert("Error connecting to server.");
+    } finally {
+      setLoadingRequests(false);
+      setRequestToDelete(null);
+    }
+  };
+
   if (sessionPending || isLoading) {
     return (
       <div className="space-y-6">
@@ -218,7 +383,7 @@ const DashListPage = () => {
               My Listings
             </h1>
             <p className="text-xs text-gray-400">
-              Manage and track all the pets you have posted for adoption.
+              Manage and track all the pets you have posted for adoption. Click a card to view adoption requests!
             </p>
           </div>
         </div>
@@ -258,7 +423,9 @@ const DashListPage = () => {
           {pets.map((pet) => (
             <div 
               key={pet._id} 
-              className="bg-white border border-gray-100 rounded-3xl overflow-hidden shadow-xs hover:shadow-md hover:border-teal-500/10 transition-all duration-300 flex flex-col group relative"
+              onClick={() => triggerRequestsModal(pet)}
+              className="bg-white border border-gray-100 rounded-3xl overflow-hidden shadow-xs hover:shadow-md hover:border-teal-500/20 transition-all duration-300 flex flex-col group relative cursor-pointer"
+              title="Click to view adoption requests"
             >
               {/* Image Container */}
               <div className="relative h-48 w-full bg-slate-100 overflow-hidden">
@@ -319,7 +486,10 @@ const DashListPage = () => {
                   <div className="flex gap-2">
                     {/* Edit Button */}
                     <button
-                      onClick={() => triggerEdit(pet)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        triggerEdit(pet);
+                      }}
                       disabled={updatingId === pet._id}
                       className="h-10 w-10 bg-teal-50 hover:bg-teal-100 text-[#00685f] border border-teal-100 rounded-xl flex items-center justify-center transition-all duration-300 focus:outline-none"
                       title="Edit Details"
@@ -333,7 +503,10 @@ const DashListPage = () => {
 
                     {/* Delete Button */}
                     <button
-                      onClick={() => triggerDelete(pet)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        triggerDelete(pet);
+                      }}
                       disabled={deletingId === pet._id}
                       className="h-10 w-10 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-100 rounded-xl flex items-center justify-center transition-all duration-300 focus:outline-none"
                       title="Delete Listing"
@@ -670,6 +843,249 @@ const DashListPage = () => {
                 className="flex-1 py-3 px-4 bg-[#00685f] hover:bg-[#005049] text-white font-bold rounded-xl text-sm transition-colors shadow-md hover:shadow-lg"
               >
                 Yes, Update
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================== 📬 ADOPTION REQUESTS MODAL (CLICK ON CARD) ==================== */}
+      {showRequestsModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-40 animate-fadeIn">
+          <div className="bg-white rounded-3xl p-6 max-w-2xl w-full max-h-[85vh] overflow-y-auto shadow-xl border border-gray-100 relative">
+            
+            <button 
+              onClick={() => {
+                setShowRequestsModal(false);
+                setSelectedPetForRequests(null);
+                setPetRequests([]);
+              }}
+              className="absolute top-5 right-5 h-8 w-8 text-gray-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg flex items-center justify-center transition-all"
+            >
+              <X size={20} />
+            </button>
+
+            <div className="flex items-center gap-3 border-b border-gray-100 pb-4 mb-6">
+              <div className="h-10 w-10 bg-[#00685f]/10 text-[#00685f] rounded-xl flex items-center justify-center">
+                <FolderOpen size={20} />
+              </div>
+              <div>
+                <h3 className="text-xl font-extrabold text-slate-800">Adoption Requests</h3>
+                <p className="text-xs text-gray-400">Review adoption requests for <strong className="text-slate-600">"{selectedPetForRequests?.name}"</strong></p>
+              </div>
+            </div>
+
+            {loadingRequests ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <Loader2 className="animate-spin text-[#00685f] mb-3" size={32} />
+                <p className="text-sm text-slate-500 font-medium">Fetching requests...</p>
+              </div>
+            ) : petRequests.length === 0 ? (
+              <div className="text-center py-12 flex flex-col items-center">
+                <div className="h-16 w-16 bg-slate-50 text-slate-400 rounded-full flex items-center justify-center mb-4">
+                  <Mail size={24} />
+                </div>
+                <h4 className="text-base font-bold text-slate-800 mb-1">No Requests Yet</h4>
+                <p className="text-xs text-gray-400 max-w-xs">There are no adoption requests submitted for this pet listing yet.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {petRequests.map((request) => (
+                  <div 
+                    key={request._id} 
+                    className={`border rounded-2xl p-5 transition-all duration-300 relative ${
+                      request.status === 'approved' ? 'border-emerald-200 bg-emerald-50/20' : 
+                      request.status === 'rejected' ? 'border-slate-100 bg-slate-50/30 opacity-75' : 
+                      'border-gray-100 bg-white hover:border-teal-500/10'
+                    }`}
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                      <div className="space-y-3 flex-1">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="h-8 w-8 bg-slate-100 text-slate-600 rounded-lg flex items-center justify-center font-bold text-sm">
+                              {request.requesterName.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <h4 className="text-sm font-bold text-slate-800">{request.requesterName}</h4>
+                              <span className="text-[10px] text-slate-400 font-medium block sm:inline">{request.requesterEmail}</span>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => triggerDeleteRequest(request)}
+                            className="h-8 w-8 text-rose-500 hover:bg-rose-50 border border-rose-100 rounded-lg flex items-center justify-center transition-all focus:outline-none"
+                            title="Delete Adoption Request"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 text-xs text-slate-600">
+                          <p className="flex items-center gap-1.5">
+                            <Phone size={14} className="text-[#00685f]" />
+                            <span>Phone: <strong>{request.requesterPhone}</strong></span>
+                          </p>
+                          <p className="flex items-center gap-1.5">
+                            <Clock size={14} className="text-[#00685f]" />
+                            <span>Request Status: 
+                              <strong className={`ml-1 capitalize ${
+                                request.status === 'approved' ? 'text-emerald-600' :
+                                request.status === 'rejected' ? 'text-rose-600' : 'text-amber-600'
+                              }`}>
+                                {request.status}
+                              </strong>
+                            </span>
+                          </p>
+                        </div>
+
+                        <div className="bg-slate-50/50 rounded-xl p-3.5 border border-slate-100 mt-2">
+                          <span className="text-[9px] uppercase font-extrabold text-gray-400 tracking-wider flex items-center gap-1 mb-1">
+                            <MessageSquare size={10} /> Why they want to adopt:
+                          </span>
+                          <p className="text-xs text-slate-600 leading-relaxed italic">
+                            "{request.whyAdopt}"
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Request Action Buttons */}
+                      {request.status === 'pending' && (
+                        <div className="flex sm:flex-col gap-2 self-end sm:self-start w-full sm:w-auto">
+                          <button
+                            onClick={() => triggerApproveRequest(request)}
+                            className="flex-1 sm:flex-none py-2 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition-all shadow-xs flex items-center justify-center gap-1"
+                          >
+                            <CheckCircle2 size={14} /> Approve
+                          </button>
+                          <button
+                            onClick={() => triggerRejectRequest(request)}
+                            className="flex-1 sm:flex-none py-2 px-4 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-100 rounded-xl text-xs transition-all flex items-center justify-center gap-1"
+                          >
+                            <XCircle size={14} /> Reject
+                          </button>
+                        </div>
+                      )}
+
+                      {request.status === 'approved' && (
+                        <span className="bg-emerald-100 text-emerald-800 px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 self-start">
+                          <CheckCircle2 size={14} /> Approved & Adopted
+                        </span>
+                      )}
+
+                      {request.status === 'rejected' && (
+                        <span className="bg-slate-100 text-slate-500 px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 self-start">
+                          <XCircle size={14} /> Rejected
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ==================== ❓ CUSTOM APPROVE CONFIRMATION MODAL ==================== */}
+      {showApproveConfirmModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fadeIn animate-scaleUp">
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-xl border border-gray-100 flex flex-col items-center text-center">
+            <div className="h-16 w-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mb-4">
+              <CheckCircle2 size={32} />
+            </div>
+            
+            <h3 className="text-xl font-bold text-slate-800 mb-2">Approve Request</h3>
+            <p className="text-sm text-gray-400 leading-relaxed mb-6">
+              Are you sure you want to approve the adoption request from <strong className="text-slate-700">"{requestToApprove?.requesterName}"</strong>? 
+              <br />
+              <span className="text-rose-600 text-xs font-bold block mt-2">
+                ⚠️ All other requests for this pet will be rejected and this pet will be marked as Adopted!
+              </span>
+            </p>
+            
+            <div className="flex gap-3 w-full">
+              <button
+                onClick={() => {
+                  setShowApproveConfirmModal(false);
+                  setRequestToApprove(null);
+                }}
+                className="flex-1 py-3 px-4 border border-gray-200 text-slate-600 font-bold rounded-xl text-sm hover:bg-slate-50 transition-colors"
+              >
+                No, Cancel
+              </button>
+              <button
+                onClick={confirmApproveRequest}
+                className="flex-1 py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-sm transition-colors shadow-md hover:shadow-lg"
+              >
+                Yes, Approve
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================== ❌ CUSTOM REJECT CONFIRMATION MODAL ==================== */}
+      {showRejectConfirmModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fadeIn animate-scaleUp">
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-xl border border-gray-100 flex flex-col items-center text-center">
+            <div className="h-16 w-16 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mb-4">
+              <XCircle size={32} />
+            </div>
+            
+            <h3 className="text-xl font-bold text-slate-800 mb-2">Reject Request</h3>
+            <p className="text-sm text-gray-400 leading-relaxed mb-6">
+              Are you sure you want to reject the adoption request from <strong className="text-slate-700">"{requestToReject?.requesterName}"</strong>?
+            </p>
+            
+            <div className="flex gap-3 w-full">
+              <button
+                onClick={() => {
+                  setShowRejectConfirmModal(false);
+                  setRequestToReject(null);
+                }}
+                className="flex-1 py-3 px-4 border border-gray-200 text-slate-600 font-bold rounded-xl text-sm hover:bg-slate-50 transition-colors"
+              >
+                No, Keep It
+              </button>
+              <button
+                onClick={confirmRejectRequest}
+                className="flex-1 py-3 px-4 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-sm transition-colors shadow-md hover:shadow-lg"
+              >
+                Yes, Reject
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================== 🗑️ CUSTOM REQUEST DELETE CONFIRMATION MODAL ==================== */}
+      {showRequestDeleteConfirm && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fadeIn animate-scaleUp">
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-xl border border-gray-100 flex flex-col items-center text-center">
+            <div className="h-16 w-16 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mb-4">
+              <Trash2 size={32} className="text-rose-600" />
+            </div>
+            
+            <h3 className="text-xl font-bold text-slate-800 mb-2">Delete Adoption Request</h3>
+            <p className="text-sm text-gray-400 leading-relaxed mb-6">
+              Are you sure you want to delete the adoption request from <strong className="text-slate-700">"{requestToDelete?.requesterName}"</strong>? This will permanently remove the request.
+            </p>
+            
+            <div className="flex gap-3 w-full">
+              <button
+                onClick={() => {
+                  setShowRequestDeleteConfirm(false);
+                  setRequestToDelete(null);
+                }}
+                className="flex-1 py-3 px-4 border border-gray-200 text-slate-600 font-bold rounded-xl text-sm hover:bg-slate-50 transition-colors"
+              >
+                No, Cancel
+              </button>
+              <button
+                onClick={confirmDeleteRequest}
+                className="flex-1 py-3 px-4 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-sm transition-colors shadow-md hover:shadow-lg"
+              >
+                Yes, Delete
               </button>
             </div>
           </div>
