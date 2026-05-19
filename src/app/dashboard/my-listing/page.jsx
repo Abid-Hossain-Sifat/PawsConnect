@@ -61,9 +61,6 @@ const DashListPage = () => {
   const [showRejectConfirmModal, setShowRejectConfirmModal] = useState(false);
   const [requestToReject, setRequestToReject] = useState(null);
 
-  const [showRequestDeleteConfirm, setShowRequestDeleteConfirm] = useState(false);
-  const [requestToDelete, setRequestToDelete] = useState(null);
-
   const fetchMyListings = async (email) => {
     try {
       const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:2006/pets";
@@ -265,39 +262,6 @@ const DashListPage = () => {
     } finally {
       setLoadingRequests(false);
       setRequestToReject(null);
-    }
-  };
-
-  const triggerDeleteRequest = (request) => {
-    setRequestToDelete(request);
-    setShowRequestDeleteConfirm(true);
-  };
-
-  const confirmDeleteRequest = async () => {
-    if (!requestToDelete) return;
-    
-    const id = requestToDelete._id;
-    setShowRequestDeleteConfirm(false);
-    setLoadingRequests(true);
-    
-    try {
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:2006/pets";
-      const apiUrl = `${baseUrl.replace(/\/pets$/, '')}/adoption-requests/${id}`;
-      const response = await fetch(apiUrl, {
-        method: "DELETE",
-      });
-
-      if (response.ok) {
-        setPetRequests(petRequests.filter((req) => req._id !== id));
-      } else {
-        alert("Failed to delete adoption request.");
-      }
-    } catch (error) {
-      console.error("Error deleting request:", error);
-      alert("Error connecting to server.");
-    } finally {
-      setLoadingRequests(false);
-      setRequestToDelete(null);
     }
   };
 
@@ -867,23 +831,14 @@ const DashListPage = () => {
                   >
                     <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                       <div className="space-y-3 flex-1">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <div className="h-8 w-8 bg-slate-100 text-slate-600 rounded-lg flex items-center justify-center font-bold text-sm">
-                              {request.requesterName.charAt(0).toUpperCase()}
-                            </div>
-                            <div>
-                              <h4 className="text-sm font-bold text-slate-800">{request.requesterName}</h4>
-                              <span className="text-[10px] text-slate-400 font-medium block sm:inline">{request.requesterEmail}</span>
-                            </div>
+                        <div className="flex items-center gap-2">
+                          <div className="h-8 w-8 bg-slate-100 text-slate-600 rounded-lg flex items-center justify-center font-bold text-sm">
+                            {request.requesterName.charAt(0).toUpperCase()}
                           </div>
-                          <button
-                            onClick={() => triggerDeleteRequest(request)}
-                            className="h-8 w-8 text-rose-500 hover:bg-rose-50 border border-rose-100 rounded-lg flex items-center justify-center transition-all focus:outline-none"
-                            title="Delete Adoption Request"
-                          >
-                            <Trash2 size={14} />
-                          </button>
+                          <div>
+                            <h4 className="text-sm font-bold text-slate-800">{request.requesterName}</h4>
+                            <span className="text-[10px] text-slate-400 font-medium block sm:inline">{request.requesterEmail}</span>
+                          </div>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 text-xs text-slate-600">
@@ -1015,39 +970,6 @@ const DashListPage = () => {
                 className="flex-1 py-3 px-4 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-sm transition-colors shadow-md hover:shadow-lg"
               >
                 Yes, Reject
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showRequestDeleteConfirm && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fadeIn animate-scaleUp">
-          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-xl border border-gray-100 flex flex-col items-center text-center">
-            <div className="h-16 w-16 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mb-4">
-              <Trash2 size={32} className="text-rose-600" />
-            </div>
-            
-            <h3 className="text-xl font-bold text-slate-800 mb-2">Delete Adoption Request</h3>
-            <p className="text-sm text-gray-400 leading-relaxed mb-6">
-              Are you sure you want to delete the adoption request from <strong className="text-slate-700">"{requestToDelete?.requesterName}"</strong>? This will permanently remove the request.
-            </p>
-            
-            <div className="flex gap-3 w-full">
-              <button
-                onClick={() => {
-                  setShowRequestDeleteConfirm(false);
-                  setRequestToDelete(null);
-                }}
-                className="flex-1 py-3 px-4 border border-gray-200 text-slate-600 font-bold rounded-xl text-sm hover:bg-slate-50 transition-colors"
-              >
-                No, Cancel
-              </button>
-              <button
-                onClick={confirmDeleteRequest}
-                className="flex-1 py-3 px-4 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-sm transition-colors shadow-md hover:shadow-lg"
-              >
-                Yes, Delete
               </button>
             </div>
           </div>
