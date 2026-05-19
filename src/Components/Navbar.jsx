@@ -9,7 +9,6 @@ import { usePathname } from 'next/navigation';
 const Navbar = () => {
   const pathname = usePathname();
 
-  // Use session from Better Auth
   const { data: session, isPending } = authClient.useSession();
 
   if (pathname?.startsWith('/dashboard')) return null;
@@ -18,7 +17,7 @@ const Navbar = () => {
     await authClient.signOut({
       fetchOptions: {
         onSuccess: () => {
-          window.location.href = "/log-in"; // Redirect to login on success
+          window.location.href = "/log-in"; 
         }
       }
     });
@@ -43,10 +42,8 @@ const Navbar = () => {
         
         <div>
           {isPending ? (
-            // Loading state while checking session
             <div className="skeleton w-24 h-10 rounded-lg"></div>
           ) : session ? (
-            // Logged in state
             <div className="dropdown dropdown-end">
               <div tabIndex={0} role="button" className="flex items-center gap-2 btn btn-ghost p-1 rounded-full px-3 hover:bg-slate-100 border border-slate-200">
                 {session.user.image ? (
@@ -82,7 +79,6 @@ const Navbar = () => {
               </ul>
             </div>
           ) : (
-            // Not logged in state
             <Link href='/log-in'>
               <button className='flex gap-1 items-center btn bg-[#007A78] hover:bg-[#005A58] text-white px-6 py-2.5 text-sm font-medium transition-all duration-300'>
                 Login <FaArrowRightToBracket />
