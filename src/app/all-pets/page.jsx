@@ -2,7 +2,8 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { authClient } from '@/lib/auth-client';
-import { Loader2, Heart, MapPin, Sparkles } from 'lucide-react';
+import { Heart, MapPin, Sparkles } from 'lucide-react';
+import { AllPetsSkeleton } from '@/Components/SkeletonLoader';
 
 const AllPetsPage = () => {
   const { data: session, isPending: sessionPending } = authClient.useSession();
@@ -40,12 +41,7 @@ const AllPetsPage = () => {
   }, [session, sessionPending]);
 
   if (loading || sessionPending) {
-    return (
-      <div className="min-h-screen bg-[#f5faf8] flex flex-col items-center justify-center p-4">
-        <Loader2 size={40} className="animate-spin text-[#00685f] mb-4" />
-        <p className="text-sm font-semibold text-slate-600">Loading pets list...</p>
-      </div>
-    );
+    return <AllPetsSkeleton />;
   }
 
   return (

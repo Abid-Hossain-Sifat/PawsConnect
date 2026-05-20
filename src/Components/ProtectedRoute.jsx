@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
-import { Loader2 } from "lucide-react";
+import { ProtectedRouteSkeleton } from "./SkeletonLoader";
 
 const ProtectedRoute = ({ children }) => {
   const router = useRouter();
@@ -14,7 +14,9 @@ const ProtectedRoute = ({ children }) => {
   useEffect(() => {
     if (!isPending) {
       if (!session) {
-        const currentPath = pathname + (searchParams.toString() ? `?${searchParams.toString()}` : "");
+        const currentPath =
+          pathname +
+          (searchParams.toString() ? `?${searchParams.toString()}` : "");
         router.push(`/log-in?redirect=${encodeURIComponent(currentPath)}`);
       }
       setIsChecking(false);
@@ -22,14 +24,7 @@ const ProtectedRoute = ({ children }) => {
   }, [session, isPending, router, pathname, searchParams]);
 
   if (isPending || isChecking) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-10 h-10 text-[#00685f] animate-spin" />
-          <p className="text-gray-600 font-medium">Checking authentication...</p>
-        </div>
-      </div>
-    );
+    return <ProtectedRouteSkeleton />;
   }
 
   if (session) {

@@ -1,7 +1,8 @@
-"use client";
+'use client'
 import React, { useEffect, useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import ProtectedRoute from "@/Components/ProtectedRoute";
+import { PetDetailSkeleton } from "@/Components/SkeletonLoader";
 import {
   Heart,
   MapPin,
@@ -109,14 +110,7 @@ const PetDetailsPage = ({ params }) => {
   };
 
   if (loading || sessionPending) {
-    return (
-      <div className="min-h-screen bg-[#f5faf8] flex flex-col items-center justify-center p-4">
-        <Loader2 size={40} className="animate-spin text-[#00685f] mb-4" />
-        <p className="text-sm font-semibold text-slate-600">
-          Loading pet details...
-        </p>
-      </div>
-    );
+    return <PetDetailSkeleton />;
   }
 
   if (!pet) {
