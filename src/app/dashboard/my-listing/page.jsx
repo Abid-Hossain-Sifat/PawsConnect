@@ -310,7 +310,7 @@ const DashListPage = () => {
   }
 
   return (
-    <div className="space-y-6 relative">
+    <div className="space-y-6 relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-gray-100 rounded-3xl p-6 shadow-xs">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 bg-[#00685f]/10 text-[#00685f] rounded-xl flex items-center justify-center">
@@ -328,7 +328,7 @@ const DashListPage = () => {
 
         <Link
           href="/dashboard/add-pet"
-          className="bg-[#00685f] hover:bg-[#005049] text-white text-sm font-semibold px-5 py-3 rounded-xl transition-all flex items-center gap-2 shadow-xs self-start sm:self-auto"
+          className="bg-[#00685f] hover:bg-[#005049] text-white text-sm font-semibold px-5 py-3 rounded-xl transition-all flex items-center gap-2 shadow-xs w-full sm:w-auto self-start sm:self-auto"
         >
           <PlusCircle size={18} />
           Add New Pet
@@ -351,7 +351,7 @@ const DashListPage = () => {
 
           <Link
             href="/dashboard/add-pet"
-            className="border-2 border-[#00685f] text-[#00685f] hover:bg-[#00685f] hover:text-white text-sm font-bold px-6 py-3 rounded-xl transition-all duration-300"
+            className="border-2 border-[#00685f] text-[#00685f] hover:bg-[#00685f] hover:text-white text-sm font-bold px-6 py-3 rounded-xl transition-all duration-300 w-full sm:w-auto"
           >
             Create Your First Listing
           </Link>
@@ -366,7 +366,7 @@ const DashListPage = () => {
               title="Click to view adoption requests"
             >
               {/* Image Container */}
-              <div className="relative h-48 w-full bg-slate-100 overflow-hidden">
+              <div className="relative h-32 sm:h-40 md:h-48 w-full bg-slate-100 overflow-hidden">
                 <img 
                   src={pet.image} 
                   alt={pet.name} 
