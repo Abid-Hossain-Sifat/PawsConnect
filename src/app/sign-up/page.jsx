@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from "react"; 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import {
   PawPrint,
@@ -15,6 +16,7 @@ import {
 } from "lucide-react";
 
 const Register = () => {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -24,9 +26,10 @@ const Register = () => {
   });
   
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false); 
+  const [loading, setLoading] = useState(false); 
   const [showPassword, setShowPassword] = useState(false);
 
-  // প্লেইন জাভাস্ক্রিপ্ট চেঞ্জ হ্যান্ডলার (টাইপস্ক্রিপ্ট ডাটা টাইপ বাদ দেওয়া হয়েছে)
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -35,35 +38,39 @@ const Register = () => {
     if (error) setError("");
   };
 
-  // প্লেইন জাভাস্ক্রিপ্ট সাবমিট হ্যান্ডলার (টাইপস্ক্রিপ্ট ডাটা টাইপ বাদ দেওয়া হয়েছে)
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // chck pass
+    
     if (formData.password !== formData.confirmPassword) {
       setError("Error: Passwords do not match. Please try again.");
       return; 
     }
 
+    setLoading(true);
+    setError("");
+
     try {
-      // api call using better-auth
       const { data, error: authError } = await authClient.signUp.email({
         email: formData.email,
         password: formData.password,
         name: formData.name,
-        image: formData.photoUrl // Better Auth uses image instead of photoUrl by default
+        image: formData.photoUrl
       });
 
       if (authError) {
         setError(authError.message || "Registration failed. Please try again.");
+        setLoading(false);
         return;
       }
 
-      setError("");
-      alert("Registration Successful!"); 
-      window.location.href = "/log-in"; // Redirect to login page
+      setSuccess(true);
+      setTimeout(() => {
+        router.push("/log-in");
+      }, 2000);
+
     } catch (err) {
       setError("An unexpected error occurred. Please try again.");
+      setLoading(false);
     }
   };
 
@@ -86,12 +93,7 @@ const Register = () => {
           </p>
         </div>
 
-        {/* fort st from here */}
-        <form
-          onSubmit={handleSubmit}
-          className="relative z-10 flex flex-col gap-5"
-        >
-          {/* Name*/}
+        <form onSubmit={handleSubmit} className="relative z-10 flex flex-col gap-5">
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-bold uppercase tracking-wider text-slate-700 pl-1">
               Name
@@ -106,11 +108,11 @@ const Register = () => {
                 placeholder="John Doe"
                 className="w-full bg-slate-50 text-slate-800 pl-12 pr-4 py-3.5 rounded-xl font-medium placeholder-gray-400 outline-none border-2 border-transparent focus:border-[#00685f]/40 focus:bg-white focus:shadow-[0_0_15px_rgba(0,104,95,0.05)] transition-all duration-300 text-sm"
                 required
+                disabled={loading || success}
               />
             </div>
           </div>
 
-          {/* Email */}
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-bold uppercase tracking-wider text-slate-700 pl-1">
               Email
@@ -125,11 +127,11 @@ const Register = () => {
                 placeholder="example@gmail.com"
                 className="w-full bg-slate-50 text-slate-800 pl-12 pr-4 py-3.5 rounded-xl font-medium placeholder-gray-400 outline-none border-2 border-transparent focus:border-[#00685f]/40 focus:bg-white focus:shadow-[0_0_15px_rgba(0,104,95,0.05)] transition-all duration-300 text-sm"
                 required
+                disabled={loading || success}
               />
             </div>
           </div>
 
-          {/* Photo link */}
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-bold uppercase tracking-wider text-slate-700 pl-1">
               Photo URL
@@ -144,11 +146,11 @@ const Register = () => {
                 placeholder="https://example.com/avatar.jpg"
                 className="w-full bg-slate-50 text-slate-800 pl-12 pr-4 py-3.5 rounded-xl font-medium placeholder-gray-400 outline-none border-2 border-transparent focus:border-[#00685f]/40 focus:bg-white focus:shadow-[0_0_15px_rgba(0,104,95,0.05)] transition-all duration-300 text-sm"
                 required
+                disabled={loading || success}
               />
             </div>
           </div>
 
-          {/* Password */}
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-bold uppercase tracking-wider text-slate-700 pl-1">
               Password
@@ -166,18 +168,19 @@ const Register = () => {
                 title="Password must contain at least 6 characters, 1 uppercase and 1 lowercase letter"
                 className="w-full bg-slate-50 text-slate-800 pl-12 pr-12 py-3.5 rounded-xl font-medium placeholder-gray-400 outline-none border-2 border-transparent focus:border-[#00685f]/40 focus:bg-white focus:shadow-[0_0_15px_rgba(0,104,95,0.05)] transition-all duration-300 text-sm"
                 required
+                disabled={loading || success}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-slate-600 transition-colors"
+                disabled={loading || success}
               >
                 {showPassword ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
               </button>
             </div>
           </div>
 
-          {/* Confirm Pass */}
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-bold uppercase tracking-wider text-slate-700 pl-1">
               Confirm Password
@@ -192,11 +195,11 @@ const Register = () => {
                 placeholder="••••••••"
                 className="w-full bg-slate-50 text-slate-800 pl-12 pr-12 py-3.5 rounded-xl font-medium placeholder-gray-400 outline-none border-2 border-transparent focus:border-[#00685f]/40 focus:bg-white focus:shadow-[0_0_15px_rgba(0,104,95,0.05)] transition-all duration-300 text-sm"
                 required
+                disabled={loading || success}
               />
             </div>
           </div>
 
-          {/* Password requirements and chck if ok change txt color*/}
           <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/60 flex flex-col gap-2 mt-1">
             <p className="text-xs font-bold text-slate-700 uppercase tracking-wide mb-1">
               Password Requirements:
@@ -219,7 +222,6 @@ const Register = () => {
             </div>
           </div>
 
-          {/* pass dont match alert*/}
           {error && (
             <div className="flex items-center gap-2.5 bg-rose-50 border border-rose-200/60 p-3.5 rounded-xl text-rose-700 text-xs font-bold transition-all duration-300">
               <AlertCircle className="w-4 h-4 shrink-0" />
@@ -227,15 +229,23 @@ const Register = () => {
             </div>
           )}
 
-          {/* Submit btn*/}
+          {success && (
+            <div className="flex items-center gap-2.5 bg-teal-50 border border-teal-200/60 p-3.5 rounded-xl text-teal-700 text-xs font-bold transition-all duration-300">
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+              <span>Registration Successful! Redirecting to login...</span>
+            </div>
+          )}
+
           <button
             type="submit"
-            className="btn border-none normal-case w-full bg-[#00685f] hover:bg-[#00574f] text-white font-bold h-auto min-h-0 py-4 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 text-sm mt-2"
+            disabled={loading || success}
+            className={`btn border-none normal-case w-full font-bold h-auto min-h-0 py-4 rounded-xl shadow-md transition-all duration-300 text-sm mt-2 text-white ${
+              loading || success ? "bg-gray-400 cursor-not-allowed shadow-none" : "bg-[#00685f] hover:bg-[#00574f] hover:shadow-lg"
+            }`}
           >
-            Register Account
+            {loading ? "Registering Account..." : success ? "Success!" : "Register Account"}
           </button>
 
-          {/* Login  */}
           <p className="text-center text-sm font-semibold text-gray-500 mt-2">
             Already have an account?{" "}
             <Link

@@ -9,20 +9,20 @@ const HomePets = async () => {
   const featuredPets = pets ? pets.slice(0, 6) : [];
 
   return (
-    <div className="bg-[#f5faf8] py-16">
-      <div className="max-w-[80%] mx-auto">
-        <div className="flex justify-between items-end mb-8">
+    <div className="bg-[#f5faf8] py-12 md:py-16">
+      <div className="w-full lg:max-w-[80%] mx-auto px-4 lg:px-0">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-8">
           <div>
-            <h2 className="text-3xl font-bold text-slate-800 mb-2">
+            <h2 className="text-2xl md:text-3xl font-bold text-slate-800 mb-2">
               Featured Companions
             </h2>
-            <p className="text-sm text-gray-600">
+            <p className="text-xs md:text-sm text-gray-600">
               Meet the newest residents waiting for their forever family.
             </p>
           </div>
           <Link
             href="/all-pets"
-            className="flex items-center gap-1 text-sm font-semibold text-[#00685f] hover:underline group"
+            className="flex items-center gap-1 text-sm font-semibold text-[#00685f] hover:underline group shrink-0"
           >
             View All Pets
             <ArrowRight
@@ -41,7 +41,7 @@ const HomePets = async () => {
                 key={pet._id || index}
                 className="group bg-white rounded-2xl p-4 border border-gray-100 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between"
               >
-                <div className="relative h-64 w-full rounded-xl overflow-hidden mb-4">
+                <div className="relative h-60 sm:h-64 w-full rounded-xl overflow-hidden mb-4">
                   <img
                     src={
                       pet.image ||
@@ -70,24 +70,26 @@ const HomePets = async () => {
                 </div>
 
                 <div className="flex-grow flex flex-col justify-between">
-                  <div className="flex justify-between items-start mb-1">
-                    <h3 className="text-2xl font-bold text-slate-800">
-                      {pet.name || "Pet"}
-                    </h3>
+                  <div>
+                    <div className="flex justify-between items-start mb-1 gap-2">
+                      <h3 className="text-xl md:text-2xl font-bold text-slate-800 line-clamp-1">
+                        {pet.name || "Pet"}
+                      </h3>
 
-                    <span className="bg-[#eef7f5] text-[#00685f] text-xs font-semibold px-2.5 py-1 rounded-md border border-[#00685f]/10">
-                      {pet.age || "Adult"}
-                    </span>
+                      <span className="bg-[#eef7f5] text-[#00685f] text-xs font-semibold px-2.5 py-1 rounded-md border border-[#00685f]/10 shrink-0">
+                        {pet.age || "Adult"}
+                      </span>
+                    </div>
+
+                    <p className="text-sm text-gray-500 mb-5 line-clamp-1">
+                      {pet.breed || pet.species} • {pet.location}
+                    </p>
                   </div>
 
-                  <p className="text-sm text-gray-500 mb-5">
-                    {pet.breed || pet.species} • {pet.location}
-                  </p>
-
-                  <Link href={`/all-pets/${pet._id}`}>
+                  <Link href={`/all-pets/${pet._id}`} className="w-full">
                     <button className="w-full bg-white hover:bg-[#00685f] hover:text-white hover:border-[#00685f] text-slate-800 font-semibold py-2.5 border border-gray-300 rounded-xl transition-all duration-300 text-sm shadow-xs">
-                    View Details
-                  </button>
+                      View Details
+                    </button>
                   </Link>
                 </div>
               </div>
