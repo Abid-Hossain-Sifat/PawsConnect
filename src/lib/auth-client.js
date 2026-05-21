@@ -69,16 +69,11 @@ export const authClient = {
   signIn: {
     email: async ({ email, password }) => {
       try {
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL;
-        const authUrl = `${baseUrl.replace(/\/pets$/, "")}/auth/login`;
+        const baseUrl = process.env.NEXT_PUBLIC_AUTH_URL || process.env.NEXT_PUBLIC_API_URL?.replace(/\/pets$/, "");
+        const authUrl = `${baseUrl}/auth/login`;
 
         const res = await fetch(authUrl, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ email, password }),
-          credentials: "include",
         });
 
         const data = await res.json();
@@ -100,8 +95,8 @@ export const authClient = {
       }
     },
     social: async ({ provider, callbackURL }) => {
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL;
-      const redirectUrl = `${baseUrl.replace(/\/pets$/, "")}/auth/social/${provider}?callbackURL=${encodeURIComponent(callbackURL)}`;
+      const baseUrl = process.env.NEXT_PUBLIC_AUTH_URL || process.env.NEXT_PUBLIC_API_URL?.replace(/\/pets$/, "");
+      const redirectUrl = `${baseUrl}/auth/social/${provider}?callbackURL=${encodeURIComponent(callbackURL)}`;
       window.location.href = redirectUrl;
       return {};
     },
