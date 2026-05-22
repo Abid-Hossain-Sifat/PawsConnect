@@ -69,7 +69,7 @@ const LoginContent = () => {
       showToastMessage("Connecting with Google...", "success");
       await authClient.signIn.social({
         provider: "google",
-        callbackURL: `http://localhost:3000${redirectPath}`
+        callbackURL: `${window.location.origin}${redirectPath}`
       });
     } catch (err) {
       showToastMessage("Google login failed.", "error");
