@@ -2,7 +2,7 @@
 
 # 🌐 Live Demo
 ### 🔗 Visit Now:
-👉 https://assignment8-sun-cart.vercel.app
+👉 https://pawsconnectbyabid.vercel.app
 
 ---
 
